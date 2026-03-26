@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RockPaperCVssors - AI Mastery</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #00f2fe;
+            --secondary: #4facfe;
+            --bg: #0b0e14;
+            --card-bg: rgba(20, 24, 33, 0.85);
+            --border: rgba(255, 255, 255, 0.1);
+            --glow: 0 0 20px rgba(79, 172, 254, 0.4);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: var(--bg);
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: radial-gradient(circle at 50% 50%, #151b27 0%, #0b0e14 100%);
+        }
+
+        #app-container {
+            position: relative;
+            width: 900px;
+            height: 700px;
+            background: var(--card-bg);
+            border-radius: 24px;
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+        }
+
+        /* HUD Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .logo { font-family: 'Orbitron', sans-serif; font-size: 1.4rem; letter-spacing: 2px; color: var(--primary); font-weight: 700; text-shadow: var(--glow); }
+
+        .scoreboard {
+            display: flex;
+            gap: 16px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 8px 24px;
+            border-radius: 50px;
+            border: 1px solid var(--border);
+        }
+
+        .score-item { text-align: center; }
+        .score-val { font-size: 1.1rem; font-weight: 700; display: block; }
+        .score-label { font-size: 0.65rem; text-transform: uppercase; color: #888; font-weight: 600; }
+        .score-win { color: #00ff88; }
+        .score-loss { color: #ff3e3e; }
+        .score-draw { color: #f0f0f0; }
+
+        /* Video Area */
+        #viewport {
+            position: relative;
+            flex-grow: 1;
+            background: #000;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #stream {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .overlay-center {
+            position: absolute;
+            top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 6rem;
+            color: #fff;
+            text-shadow: 0 0 30px rgba(0, 242, 254, 0.8);
+            pointer-events: none;
+            opacity: 0;
+            z-index: 10;
+            transition: opacity 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .overlay-center.active { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+
+        #result-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(8px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: 0.5s;
+            z-index: 20;
+            border-radius: 16px;
+        }
+        #result-overlay.active { opacity: 1; pointer-events: auto; }
+
+        .result-title { font-family: 'Orbitron', sans-serif; font-size: 3.5rem; margin-bottom: 20px; font-weight: 700; letter-spacing: 5px; }
+        .win-title { color: #00ff88; text-shadow: 0 0 20px rgba(0,255,136,0.5); }
+        .loss-title { color: #ff3e3e; text-shadow: 0 0 20px rgba(255,62,62,0.5); }
+        .draw-title { color: #f0f0f0; text-shadow: 0 0 20px rgba(255,255,255,0.5); }
+
+        .battle-display { display: flex; align-items: center; gap: 40px; margin-top: 20px; }
+        .fighter { text-align: center; }
+        .fighter-label { font-size: 0.7rem; text-transform: uppercase; color: #888; font-weight: 600; margin-bottom: 8px; }
+        .fighter-move { font-family: 'Orbitron', sans-serif; font-size: 1.5rem; font-weight: 700; color: #fff; }
+        .vs { font-family: 'Orbitron', sans-serif; font-size: 1.2rem; color: var(--primary); font-weight: 700; }
+
+        /* Controls Area */
+        footer {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .main-btn {
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            border: none;
+            color: #00121e;
+            padding: 14px 40px;
+            border-radius: 12px;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 10px 15px -3px rgba(79, 172, 254, 0.3);
+        }
+        .main-btn:hover { transform: translateY(-3px); box-shadow: 0 15px 20px -5px rgba(79, 172, 254, 0.5); }
+        .main-btn:active { transform: translateY(0); }
+
+        .diff-selector { display: flex; gap: 8px; }
+        .diff-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            color: #ccc;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .diff-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .diff-btn.active { background: var(--secondary); color: #00121e; font-weight: 700; }
+
+        #hint { font-size: 0.85rem; color: #718096; margin-top: 10px; text-align: center; }
+
+    </style>
+</head>
+<body>
+
+    <div id="app-container">
+        <header>
+            <div class="logo">ROCK PAPER CVSSORS</div>
+            <div class="scoreboard">
+                <div class="score-item">
+                    <span class="score-label">Wins</span>
+                    <span class="score-val score-win" id="score-wins">0</span>
+                </div>
+                <div class="score-item">
+                    <span class="score-label">Losses</span>
+                    <span class="score-val score-loss" id="score-losses">0</span>
+                </div>
+                <div class="score-item">
+                    <span class="score-label">Draws</span>
+                    <span class="score-val score-draw" id="score-draws">0</span>
+                </div>
+            </div>
+        </header>
+
+        <div id="viewport">
+            <img id="stream" src="/video_feed" alt="Webcam Stream">
+            <div id="countdown-overlay" class="overlay-center"></div>
+            <div class="difficulty-badge" id="diff-badge">EASY</div>
+            
+            <div id="result-overlay">
+                <div id="result-text" class="result-title">YOU WIN!</div>
+                <div class="battle-display">
+                    <div class="fighter">
+                        <div class="fighter-label">Player</div>
+                        <div class="fighter-move" id="player-move">ROCK</div>
+                    </div>
+                    <div class="vs">VS</div>
+                    <div class="fighter">
+                        <div class="fighter-label">AI</div>
+                        <div class="fighter-move" id="ai-move">PAPER</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <button class="main-btn" id="play-btn">START ROUND</button>
+            <div class="diff-selector">
+                <button class="diff-btn active" data-id="1" id="diff1">EASY</button>
+                <button class="diff-btn" data-id="2" id="diff2">MEDIUM</button>
+                <button class="diff-btn" data-id="3" id="diff3">HARD</button>
+            </div>
+        </footer>
+    </div>
+    <div id="hint">Tip: Ensure your full hand is visible within the frame. SPACE: Play, 1/2/3: Difficulty</div>
+
+    <script>
+        const playBtn = document.getElementById('play-btn');
+        const countdownOverlay = document.getElementById('countdown-overlay');
+        const diffBtns = document.querySelectorAll('.diff-btn');
+        const diffBadge = document.getElementById('diff-badge');
+        
+        const scoreWins = document.getElementById('score-wins');
+        const scoreLosses = document.getElementById('score-losses');
+        const scoreDraws = document.getElementById('score-draws');
+
+        const resultOverlay = document.getElementById('result-overlay');
+        const resultText = document.getElementById('result-text');
+        const playerMoveEl = document.getElementById('player-move');
+        const aiMoveEl = document.getElementById('ai-move');
+
+        let lastResultId = -1;
+
+        function sendAction(cmd) {
+            fetch('/action', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cmd: cmd })
+            });
+        }
+
+        playBtn.addEventListener('click', () => {
+            sendAction('start');
+        });
+
+        diffBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.getAttribute('data-id');
+                sendAction(id);
+                diffBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            });
+        });
+
+        // Key listeners
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                sendAction('start');
+            } else if (['1', '2', '3'].includes(e.key)) {
+                sendAction(e.key);
+                diffBtns.forEach(b => {
+                    b.classList.remove('active');
+                    if (b.getAttribute('data-id') === e.key) b.classList.add('active');
+                });
+            }
+        });
+
+        // Sync game info
+        setInterval(() => {
+            fetch('/game_info')
+                .then(r => r.json())
+                .then(data => {
+                    scoreWins.textContent = data.score.wins;
+                    scoreLosses.textContent = data.score.losses;
+                    scoreDraws.textContent = data.score.draws;
+                    diffBadge.textContent = data.difficulty.toUpperCase();
+                    
+                    if (data.state === 'countdown') {
+                        playBtn.disabled = true;
+                        playBtn.style.opacity = 0.5;
+                        resultOverlay.classList.remove('active');
+                    } else if (data.state === 'result') {
+                        if (data.last_round && data.last_round.round !== lastResultId) {
+                            lastResultId = data.last_round.round;
+                            showResult(data.last_round);
+                        }
+                    } else {
+                        playBtn.disabled = false;
+                        playBtn.style.opacity = 1;
+                        if (data.state === 'waiting' && lastResultId !== -1) {
+                            resultOverlay.classList.remove('active');
+                        }
+                    }
+                });
+        }, 500);
+
+        function showResult(info) {
+            const res = info.result;
+            if (res === 'error') {
+                resultText.textContent = 'NOT RECOGNIZED';
+                resultText.className = 'result-title draw-title'; // Reuse draw style or make new one
+            } else {
+                resultText.textContent = res === 'win' ? 'YOU WIN!' : (res === 'loss' ? 'YOU LOSE' : 'DRAW');
+                resultText.className = 'result-title ' + (res === 'win' ? 'win-title' : (res === 'loss' ? 'loss-title' : 'draw-title'));
+            }
+            
+            playerMoveEl.textContent = info.player.toUpperCase();
+            aiMoveEl.textContent = info.ai.toUpperCase();
+            
+            resultOverlay.classList.add('active');
+        }
+    </script>
+</body>
+</html>
